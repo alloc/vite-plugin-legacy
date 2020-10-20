@@ -1,0 +1,21 @@
+{
+  "name": "demo",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "sirv dist"
+  },
+  "dependencies": {
+    "@pika/react": "^16.13.1",
+    "@pika/react-dom": "^16.13.1",
+    "sirv-cli": "^1.0.8"
+  },
+  "devDependencies": {
+    "@types/react": "^16.9.53",
+    "@types/react-dom": "^16.9.8",
+    "vite": "link:../node_modules/vite",
+    "vite-plugin-legacy": "link:..",
+    "vite-plugin-react": "^3.0.2"
+  }
+}
