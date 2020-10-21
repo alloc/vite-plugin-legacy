@@ -17,7 +17,7 @@ type Config = {
 }
 
 export default (config: Config = {}): Plugin => ({
-  configureBuild(viteConfig, builds) {
+  configureBuild(viteConfig) {
     if (!viteConfig.write) return
 
     const babelEnv = getBabelEnv(config)
@@ -25,63 +25,26 @@ export default (config: Config = {}): Plugin => ({
       viteConfig.esbuildTarget.toLowerCase()
     )
 
-    const buildPlugin: RollupPlugin = {
-      name: 'vite-legacy:build',
-      async generateBundle(_, bundle) {
-        const mainChunk = Object.values(bundle).find(
-          asset => asset.type == 'chunk' && asset.isEntry
-        ) as OutputChunk
+    return async build => {
+      const [mainChunk] = build.assets
+      const legacyChunk = await createLegacyChunk(
+        mainChunk,
+        viteConfig,
+        babelEnv
+      )
 
-        const legacyAssets = [
-          await createLegacyChunk(mainChunk, viteConfig, babelEnv),
-        ]
-
-        let html: string
-        let assets: ViteAsset[]
-
-        // Override the "html" and "assets" properties of the Vite build,
-        // so we can inject our own values for the legacy bundle.
-        Object.defineProperties(builds[0], {
-          html: {
-            get: () => html,
-            set(content: string) {
-              html = content.replace(
-                /<script type="module" src="([^"]+)"><\/script>/g,
-                (match, moduleId) =>
-                  path.basename(moduleId) == mainChunk.fileName
-                    ? getLoader(
-                        moduleId,
-                        path.posix.resolve(
-                          moduleId,
-                          '..',
-                          legacyAssets[0].fileName
-                        )
-                      )
-                    : match
+      build.assets.push(legacyChunk)
+      build.html = build.html.replace(
+        /<script type="module" src="([^"]+)"><\/script>/g,
+        (match, moduleId) =>
+          path.basename(moduleId) == mainChunk.fileName
+            ? getLoader(
+                moduleId,
+                path.posix.resolve(moduleId, '..', legacyChunk.fileName)
               )
-            },
-          },
-          assets: {
-            get: () => assets,
-            set(modernAssets: ViteAsset[]) {
-              assets = modernAssets.concat(legacyAssets)
-            },
-          },
-        })
-      },
+            : match
+      )
     }
-
-    // Ensure the `buildPlugin` comes after Vite plugins.
-    const setupPlugin: RollupPlugin = {
-      name: 'vite-legacy:setup',
-      options({ plugins }: any) {
-        plugins.push(buildPlugin)
-        return null
-      },
-    }
-
-    const inputPlugins = (viteConfig.rollupInputOptions.plugins ??= [])
-    inputPlugins.push(setupPlugin)
   },
 })
 
