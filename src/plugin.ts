@@ -174,7 +174,7 @@ async function createLegacyChunk(
       name: 'vite-legacy:resolve',
       resolveId(id) {
         if (id == legacyPath) return id
-        if (id.startsWith('core-js/')) {
+        if (/^(core-js|regenerator-runtime)\//.test(id)) {
           return require.resolve(id)
         }
       },

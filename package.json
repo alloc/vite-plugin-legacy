@@ -22,7 +22,8 @@
     "@babel/core": "^7.12.3",
     "@babel/preset-env": "^7.12.1",
     "core-js": "^3.6.5",
-    "dedent": "^0.7.0"
+    "dedent": "^0.7.0",
+    "regenerator-runtime": "^0.13.7"
   },
   "devDependencies": {
     "@types/babel__core": "^7.1.10",
