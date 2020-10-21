@@ -17,6 +17,11 @@ export default {
         'Firefox ESR',
         'not dead',
       ],
+      // Define which polyfills your legacy bundle needs. They will be loaded
+      // from the Polyfill.io server. See the "Polyfills" section for more info.
+      polyfills: [
+        // Empty by default
+      ],
       // Toggles whether or not browserslist config sources are used.
       // https://babeljs.io/docs/en/babel-preset-env#ignorebrowserslistconfig
       ignoreBrowserslistConfig: false,
