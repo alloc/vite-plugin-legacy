@@ -91,10 +91,14 @@ than `es2018`. You can use [this tool](http://kangax.github.io/compat-table/es20
 to know when APIs were introduced.
 
 By default, this plugin does **not** check if your bundle is using the global
-namespace APIs (inferred from `esbuildTarget`) before including them. If you
-want that, you can pass `corejs: true` to the plugin, which will only inline
-the polyfills your bundle needs. You might still need the `polyfills` option
-if you use APIs not supported by `core-js`, like `IntersectionObserver`.
+namespace APIs before importing their polyfills from [Polyfill.io]. If you want
+that, you can pass `corejs: true` to the plugin, which only includes the
+polyfills your legacy bundle needs. The downside of using `corejs: true` is that
+polyfills are inlined instead of being loaded separately, which allows for the
+browser to reuse cached polyfills between websites. Even if you set `corejs` to
+true, you can still use the `polyfills` option if you need APIs not supported
+by `core-js` (like `IntersectionObserver`).
+
 
 [Polyfill.io]: https://polyfill.io/v3/
 
