@@ -13,9 +13,14 @@ Easily generate a legacy bundle for outdated browser support.
   `esbuildTarget` in your Vite config) are supported by the user's browser.
   If not, the legacy bundle is loaded instead!
 
+- **Hassle-free polyfills**  
+  With the help of [Polyfill.io], you can add polyfills without `npm install`.
+  Just add `"InteractionObserver"` to the `polyfills` array, and the legacy
+  bundle will automatically load it. [Learn more](#polyfills)
+
 - **Usage-based `core-js@3` inlining**  
-  Modern features are detected by Babel, and only the [`core-js`] polyfills that 
-  are needed will be embedded in the legacy bundle.
+  When `corejs: true` is passed, modern features are detected by Babel, and only
+  the necessary [`core-js`] polyfills are embedded in the legacy bundle.
 
 - **Sourcemap support**  
   Set `sourcemap: true` in your Vite config to easily debug your production
