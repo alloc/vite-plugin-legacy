@@ -48,13 +48,6 @@ export default (config: Config = {}): Plugin => ({
   },
 })
 
-type ViteAsset = {
-  type: 'chunk' | 'asset'
-  fileName: string
-  code: string
-  map?: { toString: () => string } | null
-}
-
 // Only es2018+ are tested since the `script.noModule` check
 // is enough for earlier ES targets.
 const syntaxTests: { [target: string]: string } = {
