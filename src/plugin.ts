@@ -9,10 +9,17 @@ import commonJS from 'vite/node_modules/@rollup/plugin-commonjs'
 import dedent from 'dedent'
 import babel from '@babel/core'
 import path from 'path'
+import { KnownPolyfill, knownPolyfills } from './polyfills'
 
 /** Plugin configuration */
 type Config = {
+  /** Define which browsers must be supported */
   targets?: EnvOptions['targets']
+  /** Define which polyfills to load from Polyfill.io */
+  polyfills?: KnownPolyfill[]
+  /** Use inlined `core-js@3` modules instead of Polyfill.io */
+  corejs?: boolean
+  /** Disable browserslint configuration */
   ignoreBrowserslistConfig?: boolean
 }
 
@@ -20,25 +27,22 @@ export default (config: Config = {}): Plugin => ({
   configureBuild(viteConfig) {
     if (!viteConfig.write) return
 
-    const babelEnv = getBabelEnv(config)
-    const getLoader = createScriptFactory(
-      viteConfig.esbuildTarget.toLowerCase()
+    // This function renders the bundle loading script.
+    const renderScript = createScriptFactory(
+      viteConfig.esbuildTarget.toLowerCase(),
+      config.polyfills
     )
 
     return async build => {
       const [mainChunk] = build.assets
-      const legacyChunk = await createLegacyChunk(
-        mainChunk,
-        viteConfig,
-        babelEnv
-      )
+      const legacyChunk = await createLegacyChunk(mainChunk, viteConfig, config)
 
       build.assets.push(legacyChunk)
       build.html = build.html.replace(
         /<script type="module" src="([^"]+)"><\/script>/g,
         (match, moduleId) =>
           path.basename(moduleId) == mainChunk.fileName
-            ? getLoader(
+            ? renderScript(
                 moduleId,
                 path.posix.resolve(moduleId, '..', legacyChunk.fileName)
               )
@@ -62,9 +66,10 @@ const syntaxTests: { [target: string]: string } = {
 const getBabelEnv = ({
   targets = 'defaults',
   ignoreBrowserslistConfig,
+  corejs,
 }: Config): EnvOptions => ({
   bugfixes: true,
-  useBuiltIns: 'usage',
+  useBuiltIns: corejs && 'usage',
   corejs: 3,
   targets,
   ignoreBrowserslistConfig,
@@ -74,9 +79,29 @@ const getBabelEnv = ({
  * The script factory returns a script element that loads the modern bundle
  * when syntax requirements are met, else the legacy bundle is loaded.
  */
-function createScriptFactory(target: string) {
+function createScriptFactory(target: string, polyfills: string[] = []) {
+  polyfills = polyfills.filter(name => {
+    if (!knownPolyfills.includes(name)) {
+      throw Error(`Unknown polyfill: "${name}"`)
+    }
+    return true
+  })
+
+  // Include polyfills for the expected JavaScript version.
+  const targetYear = parseTargetYear(target)
+  for (let year = Math.min(targetYear, 2019); year >= 2015; --year) {
+    polyfills.unshift('es' + year)
+  }
+
+  // Polyfills are only loaded for the legacy bundle.
+  const polyfillHost = 'https://polyfill.io/v3/polyfill.min.js?version=3.53.1'
+  const polyfillScript = polyfills.length
+    ? `load('${polyfillHost}&features=${polyfills.join(',')}')\n`
+    : ``
+
   // The modern bundle is *not* loaded when its JavaScript version is unsupported.
-  const syntaxTest = syntaxTests[target]
+  let syntaxTest = syntaxTests[target]
+  syntaxTest = syntaxTest ? `eval('${syntaxTest}')\n` : ``
 
   // The modern bundle is *not* loaded when import/export syntax is unsupported.
   const moduleTest = 'script.noModule.$'
@@ -85,41 +110,65 @@ function createScriptFactory(target: string) {
     <script>
       (function() {
         var script = document.createElement('script')
+        function load(src, type) {
+          script = script.cloneNode()
+          script.type = type || ''
+          script.src = src
+          document.head.appendChild(script)
+        }
         try {
           ${moduleTest}
-          eval('${syntaxTest}')
-          script.type = 'module'
-          script.src = '${modernBundleId}'
+          ${syntaxTest}load('${modernBundleId}', 'module')
         } catch(e) {
-          script.src = '${legacyBundleId}'
+          ${polyfillScript}load('${legacyBundleId}')
         }
-        document.head.appendChild(script)
       })()
     </script>
   `
 }
 
+/** Convert `esbuildTarget` to a version year (eg: "es6" ➜ 2015). */
+function parseTargetYear(target: string) {
+  if (target == 'es5' || target == 'esnext') {
+    throw Error('[vite-legacy] Unsupported "esbuildTarget" value: ${target}')
+  }
+  const version = Number(/\d+/.exec(target)![0])
+  return version + (version < 2000 ? 2009 : 0)
+}
+
 async function createLegacyChunk(
   mainChunk: OutputChunk,
   viteConfig: BuildConfig,
-  babelEnv: EnvOptions
-) {
+  config: Config
+): Promise<OutputChunk> {
   // Transform the modern bundle into a dinosaur.
   const transformed = await babel.transformAsync(mainChunk.code!, {
     configFile: false,
     inputSourceMap: mainChunk.map,
     sourceMaps: viteConfig.sourcemap,
-    presets: [[require.resolve('@babel/preset-env'), babelEnv]],
+    presets: [[require.resolve('@babel/preset-env'), getBabelEnv(config)]],
   })
   if (!transformed) {
     throw Error('[vite-plugin-legacy] Failed to transform modern bundle')
+  }
+
+  const fileName = mainChunk.fileName.replace(/\.js$/, '.legacy.js')
+
+  // Skip the Rollup build unless corejs is enabled.
+  if (!config.corejs) {
+    return {
+      type: 'chunk',
+      fileName,
+      code: transformed.code,
+      map: transformed.map && JSON.stringify(transformed.map),
+    } as any
   }
 
   const legacyPath = path.resolve(
     viteConfig.root,
     viteConfig.outDir,
     viteConfig.assetsDir,
-    mainChunk.fileName.replace(/\.js$/, '.legacy.js')
+    fileName
   )
 
   const plugins: RollupPlugin[] = [
