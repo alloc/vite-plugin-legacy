@@ -171,13 +171,15 @@ async function createLegacyChunk(
   }
 
   // Transform the modern bundle into a dinosaur.
-  const transformed = await babel.transformAsync(mainChunk.code!, {
+  const transformed = await babel.transformAsync(mainChunk.code, {
     configFile: false,
     inputSourceMap: mainChunk.map,
     sourceMaps: viteConfig.sourcemap,
     presets,
   })
-  if (!transformed) {
+
+  const { code, map } = transformed || {}
+  if (!code) {
     throw Error('[vite-plugin-legacy] Failed to transform modern bundle')
   }
 
@@ -188,8 +190,8 @@ async function createLegacyChunk(
     return {
       type: 'chunk',
       fileName,
-      code: transformed.code,
-      map: transformed.map && JSON.stringify(transformed.map),
+      code,
+      map: map && JSON.stringify(map),
     } as any
   }
 
@@ -213,11 +215,9 @@ async function createLegacyChunk(
         }
       },
       load(id) {
-        if (id == legacyPath)
-          return {
-            code: transformed.code!,
-            map: transformed.map,
-          }
+        if (id == legacyPath) {
+          return { code, map }
+        }
       },
     },
   ]
