@@ -44,13 +44,17 @@ export default (config: Config = {}): Plugin => ({
           path.basename(moduleId) == mainChunk.fileName
             ? renderScript(
                 moduleId,
-                path.posix.resolve(moduleId, '..', legacyChunk.fileName)
+                path.posix.resolve(moduleId, '..', legacyChunk.fileName),
+                !config.corejs &&
+                  /\bregeneratorRuntime\b/.test(legacyChunk.code)
               )
             : match
       )
     }
   },
 })
+
+const regeneratorUrl = 'https://cdn.jsdelivr.net/npm/regenerator-runtime@0.13.7'
 
 // Only es2018+ are tested since the `script.noModule` check
 // is enough for earlier ES targets.
@@ -95,18 +99,21 @@ function createScriptFactory(target: string, polyfills: string[] = []) {
 
   // Polyfills are only loaded for the legacy bundle.
   const polyfillHost = 'https://polyfill.io/v3/polyfill.min.js?version=3.53.1'
-  const polyfillScript = polyfills.length
-    ? `load('${polyfillHost}&features=${polyfills.join(',')}')\n`
-    : ``
+  const polyfillScript =
+    polyfills.length > 0 &&
+    `load('${polyfillHost}&features=${polyfills.join(',')}')`
 
   // The modern bundle is *not* loaded when its JavaScript version is unsupported.
-  let syntaxTest = syntaxTests[target]
-  syntaxTest = syntaxTest ? `eval('${syntaxTest}')\n` : ``
+  const syntaxTest = syntaxTests[target]
 
   // The modern bundle is *not* loaded when import/export syntax is unsupported.
   const moduleTest = 'script.noModule.$'
 
-  return (modernBundleId: string, legacyBundleId: string) => dedent`
+  return (
+    modernBundleId: string,
+    legacyBundleId: string,
+    needsRegenerator: boolean
+  ) => dedent`
     <script>
       (function() {
         var script = document.createElement('script')
@@ -117,14 +124,25 @@ function createScriptFactory(target: string, polyfills: string[] = []) {
           document.head.appendChild(script)
         }
         try {
-          ${moduleTest}
-          ${syntaxTest}load('${modernBundleId}', 'module')
+          ${joinLines(
+            moduleTest,
+            syntaxTest && `eval('${syntaxTest}')`,
+            `load('${modernBundleId}', 'module')`
+          )}
         } catch(e) {
-          ${polyfillScript}load('${legacyBundleId}')
+          ${joinLines(
+            polyfillScript,
+            needsRegenerator && `load('${regeneratorUrl}')`,
+            `load('${legacyBundleId}')`
+          )}
         }
       })()
     </script>
   `
+}
+
+function joinLines(...lines: (string | false)[]) {
+  return lines.filter(Boolean).join('\n')
 }
 
 /** Convert `esbuildTarget` to a version year (eg: "es6" ➜ 2015). */
@@ -141,12 +159,19 @@ async function createLegacyChunk(
   viteConfig: BuildConfig,
   config: Config
 ): Promise<OutputChunk> {
+  const presets: babel.PluginItem[] = [
+    [require('@babel/preset-env'), getBabelEnv(config)],
+  ]
+  if (!config.corejs) {
+    presets.push(require('@babel/plugin-transform-regenerator'))
+  }
+
   // Transform the modern bundle into a dinosaur.
   const transformed = await babel.transformAsync(mainChunk.code!, {
     configFile: false,
     inputSourceMap: mainChunk.map,
     sourceMaps: viteConfig.sourcemap,
-    presets: [[require.resolve('@babel/preset-env'), getBabelEnv(config)]],
+    presets,
   })
   if (!transformed) {
     throw Error('[vite-plugin-legacy] Failed to transform modern bundle')
