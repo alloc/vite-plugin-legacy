@@ -153,7 +153,7 @@ async function createLegacyChunk(
     configFile: false,
     inputSourceMap: mainChunk.map,
     sourceMaps: viteConfig.sourcemap,
-    presets: [['@babel/preset-env', babelEnv]],
+    presets: [[require.resolve('@babel/preset-env'), babelEnv]],
   })
   if (!transformed) {
     throw Error('[vite-plugin-legacy] Failed to transform modern bundle')
