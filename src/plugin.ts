@@ -30,7 +30,7 @@ export default (config: Config = {}): Plugin => ({
     // This function renders the bundle loading script.
     const renderScript = createScriptFactory(
       viteConfig.esbuildTarget.toLowerCase(),
-      config.polyfills
+      config
     )
 
     return async build => {
@@ -83,18 +83,22 @@ const getBabelEnv = ({
  * The script factory returns a script element that loads the modern bundle
  * when syntax requirements are met, else the legacy bundle is loaded.
  */
-function createScriptFactory(target: string, polyfills: string[] = []) {
-  polyfills = polyfills.filter(name => {
-    if (!knownPolyfills.includes(name)) {
-      throw Error(`Unknown polyfill: "${name}"`)
-    }
-    return true
-  })
+function createScriptFactory(target: string, config: Config) {
+  const polyfills = (config.polyfills || [])
+    .filter(name => {
+      if (!knownPolyfills.includes(name)) {
+        throw Error(`Unknown polyfill: "${name}"`)
+      }
+      return true
+    })
+    .sort()
 
   // Include polyfills for the expected JavaScript version.
-  const targetYear = parseTargetYear(target)
-  for (let year = Math.min(targetYear, 2019); year >= 2015; --year) {
-    polyfills.unshift('es' + year)
+  if (!config.corejs) {
+    const targetYear = parseTargetYear(target)
+    for (let year = Math.min(targetYear, 2019); year >= 2015; --year) {
+      polyfills.unshift('es' + year)
+    }
   }
 
   // Polyfills are only loaded for the legacy bundle.
