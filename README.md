@@ -25,6 +25,10 @@ export default {
       // Toggles whether or not browserslist config sources are used.
       // https://babeljs.io/docs/en/babel-preset-env#ignorebrowserslistconfig
       ignoreBrowserslistConfig: false,
+      // When true, core-js@3 modules are inlined based on usage.
+      // When false, global namespace APIs (eg: Object.entries) are loaded
+      // from the Polyfill.io server.
+      corejs: false,
     })
   ]
 }
