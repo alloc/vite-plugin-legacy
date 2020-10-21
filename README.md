@@ -69,6 +69,30 @@ export default {
 
 &nbsp;
 
+### Polyfills
+
+The `polyfills` option lets you define which APIs to load from the
+[Polyfill.io] server. If you're using TypeScript in your Vite config, you'll
+get auto-completion for all supported polyfills. The list is incomplete, so
+open an issue if there's a missing polyfill that you need.
+
+Polyfills related to global namespaces (eg: `Object.entries`) are inferred
+from the `esbuildTarget` in your Vite config, which defaults to `es2020` if
+undefined. Be careful not to use an API that your target does not support.
+For example, don't use `Promise.prototype.finally` if your target is older
+than `es2018`. You can use [this tool](http://kangax.github.io/compat-table/es2016plus)
+to know when APIs were introduced.
+
+By default, this plugin does **not** check if your bundle is using the global
+namespace APIs (inferred from `esbuildTarget`) before including them. If you
+want that, you can pass `corejs: true` to the plugin, which will only inline
+the polyfills your bundle needs. You might still need the `polyfills` option
+if you use APIs not supported by `core-js`, like `IntersectionObserver`.
+
+[Polyfill.io]: https://polyfill.io/v3/
+
+&nbsp;
+
 ### Compatibility
 
 The latest version of Vite does *not* support this plugin.
