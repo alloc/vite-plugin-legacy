@@ -1,11 +1,7 @@
 import type { BuildConfig, Plugin } from 'vite'
 import type { Options as EnvOptions } from '@babel/preset-env'
-import {
-  rollup,
-  OutputChunk,
-  Plugin as RollupPlugin,
-} from 'vite/node_modules/rollup'
-import commonJS from 'vite/node_modules/@rollup/plugin-commonjs'
+import { rollup, OutputChunk, Plugin as RollupPlugin } from 'rollup'
+import commonJS from '@rollup/plugin-commonjs'
 import dedent from 'dedent'
 import babel from '@babel/core'
 import path from 'path'
@@ -221,9 +217,7 @@ async function createLegacyChunk(
   // Use rollup-plugin-terser even if "minify" option is esbuild.
   if (viteConfig.minify)
     plugins.push(
-      require('vite/node_modules/rollup-plugin-terser').terser(
-        viteConfig.terserOption
-      )
+      require('rollup-plugin-terser').terser(viteConfig.terserOption)
     )
 
   // Merge core-js into the legacy bundle.
