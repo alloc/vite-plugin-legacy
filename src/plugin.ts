@@ -163,19 +163,15 @@ async function createLegacyChunk(
   viteConfig: BuildConfig,
   config: Config
 ): Promise<OutputChunk> {
-  const presets: babel.PluginItem[] = [
-    [require('@babel/preset-env'), getBabelEnv(config)],
-  ]
-  if (!config.corejs) {
-    presets.push(require('@babel/plugin-transform-regenerator'))
-  }
-
   // Transform the modern bundle into a dinosaur.
   const transformed = await babel.transformAsync(mainChunk.code, {
     configFile: false,
     inputSourceMap: mainChunk.map,
     sourceMaps: viteConfig.sourcemap,
-    presets,
+    presets: [[require('@babel/preset-env'), getBabelEnv(config)]],
+    plugins: !config.corejs
+      ? [require('@babel/plugin-transform-regenerator')]
+      : null,
   })
 
   const { code, map } = transformed || {}
