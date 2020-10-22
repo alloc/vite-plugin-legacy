@@ -175,44 +175,39 @@ async function createLegacyChunk(
     throw Error('[vite-plugin-legacy] Failed to transform modern bundle')
   }
 
-  const fileName = mainChunk.fileName.replace(/\.js$/, '.legacy.js')
-
-  // Skip the Rollup build unless corejs is enabled.
-  if (!config.corejs) {
-    return {
-      type: 'chunk',
-      fileName,
-      code,
-      map: map && JSON.stringify(map),
-    } as any
-  }
-
+  // The output path of the legacy bundle.
   const legacyPath = path.resolve(
     viteConfig.root,
     viteConfig.outDir,
     viteConfig.assetsDir,
-    fileName
+    mainChunk.fileName.replace(/\.js$/, '.legacy.js')
   )
 
-  const plugins: RollupPlugin[] = [
-    commonJS({
-      sourceMap: viteConfig.sourcemap,
-    }),
-    {
-      name: 'vite-legacy:resolve',
-      resolveId(id) {
-        if (id == legacyPath) return id
-        if (/^(core-js|regenerator-runtime)\//.test(id)) {
-          return require.resolve(id)
-        }
-      },
-      load(id) {
-        if (id == legacyPath) {
-          return { code, map }
-        }
-      },
+  const plugins: RollupPlugin[] = []
+
+  // core-js imports are CommonJS modules.
+  if (config.corejs)
+    plugins.push(
+      commonJS({
+        sourceMap: viteConfig.sourcemap,
+      })
+    )
+
+  // Provide our transformed code to Rollup.
+  plugins.push({
+    name: 'vite-legacy:resolve',
+    resolveId(id) {
+      if (id == legacyPath) return id
+      if (/^(core-js|regenerator-runtime)\//.test(id)) {
+        return require.resolve(id)
+      }
     },
-  ]
+    load(id) {
+      if (id == legacyPath) {
+        return { code, map }
+      }
+    },
+  })
 
   // Use rollup-plugin-terser even if "minify" option is esbuild.
   if (viteConfig.minify)
@@ -220,7 +215,7 @@ async function createLegacyChunk(
       require('rollup-plugin-terser').terser(viteConfig.terserOption)
     )
 
-  // Merge core-js into the legacy bundle.
+  // Prepare the module graph.
   const bundle = await rollup({
     input: legacyPath,
     plugins,
