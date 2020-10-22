@@ -14,4 +14,4 @@ export const knownPolyfills = [
   'globalThis',
   'queueMicrotask',
   'requestIdleCallback',
-]
+] as const

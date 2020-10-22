@@ -84,7 +84,7 @@ const getBabelEnv = ({
  * when syntax requirements are met, else the legacy bundle is loaded.
  */
 function createScriptFactory(target: string, config: Config) {
-  const polyfills = (config.polyfills || [])
+  const polyfills: string[] = (config.polyfills || [])
     .filter(name => {
       if (!knownPolyfills.includes(name)) {
         throw Error(`Unknown polyfill: "${name}"`)
