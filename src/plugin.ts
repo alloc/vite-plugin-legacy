@@ -118,10 +118,10 @@ function createScriptFactory(target: string, config: Config) {
       (function() {
         var script = document.createElement('script')
         function load(src, type) {
-          script = script.cloneNode()
-          script.type = type || ''
-          script.src = src
-          document.head.appendChild(script)
+          var s = script.cloneNode()
+          if (type) s.type = type
+          s.src = src
+          document.head.appendChild(s)
         }
         try {
           ${joinLines(
