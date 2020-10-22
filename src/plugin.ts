@@ -74,7 +74,7 @@ const getBabelEnv = ({
 }: Config): EnvOptions => ({
   bugfixes: true,
   useBuiltIns: corejs && 'usage',
-  corejs: 3,
+  corejs: corejs ? 3 : undefined,
   targets,
   ignoreBrowserslistConfig,
 })
