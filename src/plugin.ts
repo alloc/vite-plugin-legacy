@@ -212,7 +212,7 @@ async function createLegacyChunk(
   // Use rollup-plugin-terser even if "minify" option is esbuild.
   if (viteConfig.minify)
     plugins.push(
-      require('rollup-plugin-terser').terser(viteConfig.terserOption)
+      require('rollup-plugin-terser').terser(viteConfig.terserOptions)
     )
 
   // Prepare the module graph.
