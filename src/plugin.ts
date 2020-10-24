@@ -162,7 +162,7 @@ async function createLegacyChunk(
   // Transform the modern bundle into a dinosaur.
   const transformed = await babel.transformAsync(mainChunk.code, {
     configFile: false,
-    inputSourceMap: mainChunk.map,
+    inputSourceMap: mainChunk.map ?? undefined,
     sourceMaps: viteConfig.sourcemap,
     presets: [[require('@babel/preset-env'), getBabelEnv(config)]],
     plugins: !config.corejs
