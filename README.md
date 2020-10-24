@@ -99,6 +99,7 @@ browser to reuse cached polyfills between websites. Even if you set `corejs` to
 true, you can still use the `polyfills` option if you need APIs not supported
 by `core-js` (like `IntersectionObserver`).
 
+The `polyfills` option allows any of the values in [this list](https://github.com/alloc/vite-plugin-legacy/blob/master/src/polyfills.ts).
 
 [Polyfill.io]: https://polyfill.io/v3/
 
@@ -110,4 +111,4 @@ The latest version of Vite does *not* support this plugin.
 
 You need to clone Vite locally and checkout this PR:
 
-- https://github.com/vitejs/vite/pull/878
+- https://github.com/vitejs/vite/pull/874
