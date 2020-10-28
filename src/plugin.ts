@@ -187,7 +187,7 @@ async function createLegacyChunk(
   if (config.corejs)
     plugins.push(
       commonJS({
-        sourceMap: viteConfig.sourcemap,
+        sourceMap: !!viteConfig.sourcemap,
       })
     )
 
