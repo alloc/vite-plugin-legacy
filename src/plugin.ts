@@ -32,18 +32,19 @@ export default (config: Config = {}): Plugin => ({
       const legacyChunk = await createLegacyChunk(mainChunk, viteConfig, config)
 
       build.assets.push(legacyChunk)
-      build.html = build.html.replace(
-        /<script type="module" src="([^"]+)"><\/script>/g,
-        (match, moduleId) =>
-          path.basename(moduleId) == mainChunk.fileName
-            ? renderScript(
-                moduleId,
-                path.posix.resolve(moduleId, '..', legacyChunk.fileName),
-                !config.corejs &&
-                  /\bregeneratorRuntime\b/.test(legacyChunk.code)
-              )
-            : match
-      )
+      if (viteConfig.emitIndex)
+        build.html = build.html.replace(
+          /<script type="module" src="([^"]+)"><\/script>/g,
+          (match, moduleId) =>
+            path.basename(moduleId) == mainChunk.fileName
+              ? renderScript(
+                  moduleId,
+                  path.posix.resolve(moduleId, '..', legacyChunk.fileName),
+                  !config.corejs &&
+                    /\bregeneratorRuntime\b/.test(legacyChunk.code)
+                )
+              : match
+        )
     }
   },
 })
