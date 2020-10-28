@@ -21,8 +21,6 @@ type Config = {
 
 export default (config: Config = {}): Plugin => ({
   configureBuild(viteConfig) {
-    if (!viteConfig.write) return
-
     // This function renders the bundle loading script.
     const renderScript = createScriptFactory(
       viteConfig.esbuildTarget.toLowerCase(),
