@@ -1,6 +1,6 @@
 import type { BuildConfig, Plugin } from 'vite'
 import type { Options as EnvOptions } from '@babel/preset-env'
-import { rollup, OutputChunk, Plugin as RollupPlugin } from 'rollup'
+import { OutputChunk, Plugin as RollupPlugin } from 'rollup'
 import commonJS from '@rollup/plugin-commonjs'
 import dedent from 'dedent'
 import babel from '@babel/core'
@@ -213,6 +213,8 @@ async function createLegacyChunk(
     plugins.push(
       require('rollup-plugin-terser').terser(viteConfig.terserOptions)
     )
+
+  const rollup = require('rollup').rollup as typeof import('rollup').rollup
 
   // Prepare the module graph.
   const bundle = await rollup({
