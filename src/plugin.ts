@@ -39,7 +39,7 @@ export default (config: Config = {}): Plugin => ({
             path.basename(moduleId) == mainChunk.fileName
               ? renderScript(
                   moduleId,
-                  path.posix.resolve(moduleId, '..', legacyChunk.fileName),
+                  path.dirname(moduleId) + '/' + legacyChunk.fileName,
                   !config.corejs &&
                     /\bregeneratorRuntime\b/.test(legacyChunk.code)
                 )
