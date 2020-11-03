@@ -1,4 +1,4 @@
-import type { BuildConfig, Plugin } from 'vite'
+import type { BuildContext, Plugin } from 'vite'
 import type { Options as EnvOptions } from '@babel/preset-env'
 import { OutputChunk, Plugin as RollupPlugin } from 'rollup'
 import commonJS from '@rollup/plugin-commonjs'
@@ -20,20 +20,25 @@ type Config = {
 }
 
 export default (config: Config = {}): Plugin => ({
-  configureBuild(viteConfig) {
+  configureBuild(ctx) {
     // This function renders the bundle loading script.
     const renderScript = createScriptFactory(
-      viteConfig.esbuildTarget.toLowerCase(),
+      ctx.esbuildTarget.toLowerCase(),
       config
     )
 
-    return async build => {
-      const [mainChunk] = build.assets
-      const legacyChunk = await createLegacyChunk(mainChunk, viteConfig, config)
+    ctx.afterEach(async result => {
+      const { build } = result
+      if (build.input !== 'index.html') {
+        return // Only generate legacy bundles for "index.html" builds.
+      }
 
-      build.assets.push(legacyChunk)
-      if (viteConfig.emitIndex)
-        build.html = build.html.replace(
+      const [mainChunk] = result.assets
+      const legacyChunk = await createLegacyChunk(mainChunk, config, ctx)
+
+      result.assets.push(legacyChunk)
+      if (ctx.emitIndex)
+        result.html = result.html.replace(
           /<script type="module" src="([^"]+)"><\/script>/g,
           (match, moduleId) =>
             path.basename(moduleId) == mainChunk.fileName
@@ -45,7 +50,7 @@ export default (config: Config = {}): Plugin => ({
                 )
               : match
         )
-    }
+    })
   },
 })
 
@@ -155,14 +160,14 @@ function parseTargetYear(target: string) {
 
 async function createLegacyChunk(
   mainChunk: OutputChunk,
-  viteConfig: BuildConfig,
-  config: Config
+  config: Config,
+  ctx: BuildContext
 ): Promise<OutputChunk> {
   // Transform the modern bundle into a dinosaur.
   const transformed = await babel.transformAsync(mainChunk.code, {
     configFile: false,
     inputSourceMap: mainChunk.map ?? undefined,
-    sourceMaps: viteConfig.sourcemap,
+    sourceMaps: ctx.sourcemap,
     presets: [[require('@babel/preset-env'), getBabelEnv(config)]],
     plugins: !config.corejs
       ? [require('@babel/plugin-transform-regenerator')]
@@ -175,10 +180,8 @@ async function createLegacyChunk(
   }
 
   // The output path of the legacy bundle.
-  const legacyPath = path.resolve(
-    viteConfig.root,
-    viteConfig.outDir,
-    viteConfig.assetsDir,
+  const legacyPath = path.join(
+    ctx.assetsDir,
     mainChunk.fileName.replace(/\.js$/, '.legacy.js')
   )
 
@@ -188,7 +191,7 @@ async function createLegacyChunk(
   if (config.corejs)
     plugins.push(
       commonJS({
-        sourceMap: !!viteConfig.sourcemap,
+        sourceMap: !!ctx.sourcemap,
       })
     )
 
@@ -209,10 +212,8 @@ async function createLegacyChunk(
   })
 
   // Use rollup-plugin-terser even if "minify" option is esbuild.
-  if (viteConfig.minify)
-    plugins.push(
-      require('rollup-plugin-terser').terser(viteConfig.terserOptions)
-    )
+  if (ctx.minify)
+    plugins.push(require('rollup-plugin-terser').terser(ctx.terserOptions))
 
   const rollup = require('rollup').rollup as typeof import('rollup').rollup
 
@@ -226,7 +227,7 @@ async function createLegacyChunk(
   const { output } = await bundle.generate({
     file: legacyPath,
     format: 'iife',
-    sourcemap: viteConfig.sourcemap,
+    sourcemap: ctx.sourcemap,
     sourcemapExcludeSources: true,
     inlineDynamicImports: true,
   })
