@@ -46,9 +46,7 @@ export default (config: PluginConfig = {}): Plugin => {
 
         viteConfig.logger.info(chalk.cyan('creating legacy bundle...'))
         legacyChunk = await createLegacyChunk(mainChunk, config, viteConfig)
-
-        const legacyPath = legacyChunk.facadeModuleId!
-        bundle[legacyPath] = legacyChunk
+        bundle[legacyChunk.fileName] = legacyChunk
       }
 
       const target = resolveTarget(viteConfig.esbuild || {})
