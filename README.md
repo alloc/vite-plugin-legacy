@@ -2,6 +2,8 @@
 
 Easily generate a legacy bundle for outdated browser support.
 
+> Tip: Install `vite-plugin-legacy@next` for `vite@2` compatibility!
+
 ### Features
 
 - **Based on `@babel/preset-env`**  
