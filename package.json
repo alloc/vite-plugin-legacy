@@ -23,6 +23,7 @@
     "@babel/plugin-transform-regenerator": "^7.12.1",
     "@babel/preset-env": "^7.12.1",
     "@rollup/plugin-commonjs": "^15.0.0",
+    "chalk": "^4.1.0",
     "core-js": "^3.6.5",
     "dedent": "^0.7.0",
     "regenerator-runtime": "^0.13.7",
