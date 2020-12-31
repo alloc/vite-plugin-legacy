@@ -1,11 +1,14 @@
 import legacyPlugin from 'vite-plugin-legacy'
-import reactPlugin from 'vite-plugin-react'
+import reactPlugin from '@vitejs/plugin-react-refresh'
 import type { UserConfig } from 'vite'
 
 const config: UserConfig = {
-  jsx: 'react',
-  sourcemap: true,
-  esbuildTarget: 'es2018',
+  build: {
+    sourcemap: true,
+  },
+  esbuild: {
+    target: 'es2018',
+  },
   plugins: [
     reactPlugin,
     legacyPlugin({
