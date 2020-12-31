@@ -28,6 +28,7 @@ function resolveTarget({ target }: { target?: string | string[] }) {
 }
 
 export default (config: PluginConfig = {}): Plugin => {
+  let replaceScript: (match: string, moduleId: string) => string
   return {
     name: 'vite:legacy',
     // Ensure this plugin runs before vite:html
@@ -62,21 +63,20 @@ export default (config: PluginConfig = {}): Plugin => {
 
       const target = resolveTarget(viteConfig.esbuild || {})
       const renderScript = createScriptFactory(target, config)
-
-      this.transformIndexHtml = html =>
-        html.replace(
-          /<script type="module" src="([^"]+)"><\/script>/g,
-          (match, moduleId) =>
-            path.basename(moduleId) == mainChunk.fileName
-              ? renderScript(
-                  moduleId,
-                  path.dirname(moduleId) + '/' + legacyChunk.fileName,
-                  !config.corejs &&
-                    /\bregeneratorRuntime\b/.test(legacyChunk.code)
-                )
-              : match
-        )
+      replaceScript = (match, moduleId) =>
+        path.basename(moduleId) == mainChunk.fileName
+          ? renderScript(
+              moduleId,
+              path.dirname(moduleId) + '/' + legacyChunk.fileName,
+              !config.corejs && /\bregeneratorRuntime\b/.test(legacyChunk.code)
+            )
+          : match
     },
+    transformIndexHtml: html =>
+      html.replace(
+        /<script type="module" src="([^"]+)"><\/script>/g,
+        replaceScript
+      ),
   }
 }
 
