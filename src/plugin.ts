@@ -64,7 +64,7 @@ export default (config: PluginConfig = {}): Plugin => {
       const target = resolveTarget(viteConfig.esbuild || {})
       const renderScript = createScriptFactory(target, config)
       replaceScript = (match, moduleId) =>
-        path.basename(moduleId) == mainChunk.fileName
+        moduleId == path.join(viteConfig.build.base, mainChunk.fileName)
           ? renderScript(
               moduleId,
               path.dirname(moduleId) + '/' + legacyChunk.fileName,
