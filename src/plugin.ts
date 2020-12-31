@@ -47,18 +47,7 @@ export default (config: PluginConfig = {}): Plugin => {
         legacyChunk = await createLegacyChunk(mainChunk, config, viteConfig)
 
         const legacyPath = legacyChunk.facadeModuleId!
-        this.emitFile({
-          type: 'asset',
-          fileName: legacyPath,
-          source: legacyChunk.code,
-        })
-        if (legacyChunk.map && viteConfig.build.sourcemap === true) {
-          this.emitFile({
-            type: 'asset',
-            fileName: legacyPath + '.map',
-            source: JSON.stringify(legacyChunk.map),
-          })
-        }
+        bundle[legacyPath] = legacyChunk
       }
 
       const target = resolveTarget(viteConfig.esbuild || {})
@@ -250,7 +239,7 @@ async function createLegacyChunk(
 
   // Generate the legacy bundle.
   const { output } = await bundle.generate({
-    file: legacyPath,
+    entryFileNames: legacyPath,
     format: 'iife',
     sourcemap: viteBuild.sourcemap,
     sourcemapExcludeSources: true,
