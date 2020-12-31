@@ -4,6 +4,7 @@ import { OutputChunk, Plugin as RollupPlugin } from 'rollup'
 import commonJS from '@rollup/plugin-commonjs'
 import dedent from 'dedent'
 import babel from '@babel/core'
+import chalk from 'chalk'
 import path from 'path'
 import { KnownPolyfill, knownPolyfills } from './polyfills'
 
@@ -43,7 +44,7 @@ export default (config: PluginConfig = {}): Plugin => {
         // TODO: bail out if this is a worker bundle
         mainChunk = Object.values(bundle)[0] as any
 
-        viteConfig.logger.info('creating legacy bundle...')
+        viteConfig.logger.info(chalk.cyan('creating legacy bundle...'))
         legacyChunk = await createLegacyChunk(mainChunk, config, viteConfig)
 
         const legacyPath = legacyChunk.facadeModuleId!
