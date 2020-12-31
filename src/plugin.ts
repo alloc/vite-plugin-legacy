@@ -1,4 +1,4 @@
-import type { BuildContext, Plugin } from 'vite'
+import type { Plugin, ResolvedConfig as ViteConfig } from 'vite'
 import type { Options as EnvOptions } from '@babel/preset-env'
 import { OutputChunk, Plugin as RollupPlugin } from 'rollup'
 import commonJS from '@rollup/plugin-commonjs'
@@ -8,7 +8,7 @@ import path from 'path'
 import { KnownPolyfill, knownPolyfills } from './polyfills'
 
 /** Plugin configuration */
-type Config = {
+type PluginConfig = {
   /** Define which browsers must be supported */
   targets?: EnvOptions['targets']
   /** Define which polyfills to load from Polyfill.io */
@@ -19,26 +19,52 @@ type Config = {
   ignoreBrowserslistConfig?: boolean
 }
 
-export default (config: Config = {}): Plugin => ({
-  configureBuild(ctx) {
-    // This function renders the bundle loading script.
-    const renderScript = createScriptFactory(
-      ctx.esbuildTarget.toLowerCase(),
-      config
-    )
+function resolveTarget({ target }: { target?: string | string[] }) {
+  if (typeof target == 'string') target = [target]
+  return (
+    (target && target.find(target => /^es\d+$/i.test(target))) ||
+    'es2020'
+  ).toLowerCase()
+}
 
-    ctx.afterEach(async result => {
-      const { build } = result
-      if (build.input !== 'index.html') {
-        return // Only generate legacy bundles for "index.html" builds.
+export default (config: PluginConfig = {}): Plugin => {
+  return {
+    name: 'vite:legacy',
+    // Ensure this plugin runs before vite:html
+    enforce: 'pre',
+    configResolved(viteConfig) {
+      if (viteConfig.command !== 'build') return
+
+      let mainChunk: OutputChunk
+      let legacyChunk: OutputChunk
+
+      this.generateBundle = async function (_, bundle) {
+        // TODO: bail out if this is a worker bundle
+        mainChunk = Object.values(bundle)[0] as any
+
+        viteConfig.logger.info('creating legacy bundle...')
+        legacyChunk = await createLegacyChunk(mainChunk, config, viteConfig)
+
+        const legacyPath = legacyChunk.facadeModuleId!
+        this.emitFile({
+          type: 'asset',
+          fileName: legacyPath,
+          source: legacyChunk.code,
+        })
+        if (legacyChunk.map && viteConfig.build.sourcemap === true) {
+          this.emitFile({
+            type: 'asset',
+            fileName: legacyPath + '.map',
+            source: JSON.stringify(legacyChunk.map),
+          })
+        }
       }
 
-      const [mainChunk] = result.assets
-      const legacyChunk = await createLegacyChunk(mainChunk, config, ctx)
+      const target = resolveTarget(viteConfig.esbuild || {})
+      const renderScript = createScriptFactory(target, config)
 
-      result.assets.push(legacyChunk)
-      if (ctx.emitIndex)
-        result.html = result.html.replace(
+      this.transformIndexHtml = html =>
+        html.replace(
           /<script type="module" src="([^"]+)"><\/script>/g,
           (match, moduleId) =>
             path.basename(moduleId) == mainChunk.fileName
@@ -50,9 +76,9 @@ export default (config: Config = {}): Plugin => ({
                 )
               : match
         )
-    })
-  },
-})
+    },
+  }
+}
 
 const regeneratorUrl = 'https://cdn.jsdelivr.net/npm/regenerator-runtime@0.13.7'
 
@@ -71,7 +97,7 @@ const getBabelEnv = ({
   targets = 'defaults',
   ignoreBrowserslistConfig,
   corejs,
-}: Config): EnvOptions => ({
+}: PluginConfig): EnvOptions => ({
   bugfixes: true,
   useBuiltIns: corejs && 'usage',
   corejs: corejs ? 3 : undefined,
@@ -83,7 +109,7 @@ const getBabelEnv = ({
  * The script factory returns a script element that loads the modern bundle
  * when syntax requirements are met, else the legacy bundle is loaded.
  */
-function createScriptFactory(target: string, config: Config) {
+function createScriptFactory(target: string, config: PluginConfig) {
   const polyfills: string[] = (config.polyfills || [])
     .filter(name => {
       if (!knownPolyfills.includes(name)) {
@@ -160,14 +186,16 @@ function parseTargetYear(target: string) {
 
 async function createLegacyChunk(
   mainChunk: OutputChunk,
-  config: Config,
-  ctx: BuildContext
+  config: PluginConfig,
+  viteConfig: ViteConfig
 ): Promise<OutputChunk> {
+  const viteBuild = viteConfig.build
+
   // Transform the modern bundle into a dinosaur.
   const transformed = await babel.transformAsync(mainChunk.code, {
     configFile: false,
     inputSourceMap: mainChunk.map ?? undefined,
-    sourceMaps: ctx.sourcemap,
+    sourceMaps: viteBuild.sourcemap,
     presets: [[require('@babel/preset-env'), getBabelEnv(config)]],
     plugins: !config.corejs
       ? [require('@babel/plugin-transform-regenerator')]
@@ -179,24 +207,19 @@ async function createLegacyChunk(
     throw Error('[vite-plugin-legacy] Failed to transform modern bundle')
   }
 
-  // The output path of the legacy bundle.
-  const legacyPath = path.join(
-    ctx.assetsDir,
-    mainChunk.fileName.replace(/\.js$/, '.legacy.js')
-  )
-
-  const plugins: RollupPlugin[] = []
+  const legacyPath = mainChunk.fileName.replace(/\.js$/, '.legacy.js')
+  const legacyPlugins: RollupPlugin[] = []
 
   // core-js imports are CommonJS modules.
   if (config.corejs)
-    plugins.push(
+    legacyPlugins.push(
       commonJS({
-        sourceMap: !!ctx.sourcemap,
+        sourceMap: !!viteBuild.sourcemap,
       })
     )
 
   // Provide our transformed code to Rollup.
-  plugins.push({
+  legacyPlugins.push({
     name: 'vite-legacy:resolve',
     resolveId(id) {
       if (id == legacyPath) return id
@@ -212,22 +235,24 @@ async function createLegacyChunk(
   })
 
   // Use rollup-plugin-terser even if "minify" option is esbuild.
-  if (ctx.minify)
-    plugins.push(require('rollup-plugin-terser').terser(ctx.terserOptions))
+  if (viteBuild.minify)
+    legacyPlugins.push(
+      require('rollup-plugin-terser').terser(viteBuild.terserOptions)
+    )
 
   const rollup = require('rollup').rollup as typeof import('rollup').rollup
 
   // Prepare the module graph.
   const bundle = await rollup({
     input: legacyPath,
-    plugins,
+    plugins: legacyPlugins,
   })
 
   // Generate the legacy bundle.
   const { output } = await bundle.generate({
     file: legacyPath,
     format: 'iife',
-    sourcemap: ctx.sourcemap,
+    sourcemap: viteBuild.sourcemap,
     sourcemapExcludeSources: true,
     inlineDynamicImports: true,
   })
