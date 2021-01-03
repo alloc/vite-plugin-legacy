@@ -53,15 +53,17 @@ export default (config: PluginConfig = {}): Plugin => {
 
       const target = resolveTarget(config, viteConfig)
       const renderScript = createScriptFactory(target, config)
+      const getBasePath = (fileName: string) =>
+        path.posix.join(viteConfig.build.base, fileName)
 
       transformIndexHtml = html =>
         html.replace(
           /<script type="module" src="([^"]+)"><\/script>/g,
           (match, moduleId) =>
-            moduleId == path.join(viteConfig.build.base, mainChunk.fileName)
+            moduleId == getBasePath(mainChunk.fileName)
               ? renderScript(
                   moduleId,
-                  path.dirname(moduleId) + '/' + legacyChunk.fileName,
+                  getBasePath(legacyChunk.fileName),
                   !config.corejs &&
                     /\bregeneratorRuntime\b/.test(legacyChunk.code)
                 )
