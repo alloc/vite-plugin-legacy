@@ -18,14 +18,16 @@ type PluginConfig = {
   corejs?: boolean
   /** Disable browserslint configuration */
   ignoreBrowserslistConfig?: boolean
-}
-
-function resolveTarget({ target }: { target?: string | string[] }) {
-  if (typeof target == 'string') target = [target]
-  return (
-    (target && target.find(target => /^es\d+$/i.test(target))) ||
-    'es2020'
-  ).toLowerCase()
+  /**
+   * The JS version your legacy bundle is expecting. Set this as low as possible,
+   * but keep in mind which JS features your code needs.
+   *
+   * You can use https://kangax.github.io/compat-table/es2016plus/
+   * to know which JS version has the features your bundle needs.
+   *
+   * @default viteConfig.esbuild.target || "es2020"
+   */
+  ecmaVersion?: string
 }
 
 export default (config: PluginConfig = {}): Plugin => {
@@ -49,7 +51,7 @@ export default (config: PluginConfig = {}): Plugin => {
         bundle[legacyChunk.fileName] = legacyChunk
       }
 
-      const target = resolveTarget(viteConfig.esbuild || {})
+      const target = resolveTarget(config, viteConfig)
       const renderScript = createScriptFactory(target, config)
 
       transformIndexHtml = html =>
@@ -163,6 +165,18 @@ function createScriptFactory(target: string, config: PluginConfig) {
 
 function joinLines(...lines: (string | false)[]) {
   return lines.filter(Boolean).join('\n')
+}
+
+function resolveTarget(config: PluginConfig, viteConfig: ViteConfig): string {
+  let result = config.ecmaVersion
+  if (!result && typeof viteConfig.esbuild !== 'function') {
+    const { target } = viteConfig.esbuild || {}
+    const targets = typeof target == 'string' ? [target] : target
+    if (targets) {
+      result = targets.find(target => /^es\d+$/i.test(target))
+    }
+  }
+  return (result || 'es2020').toLowerCase()
 }
 
 /** Convert `esbuildTarget` to a version year (eg: "es6" ➜ 2015). */
