@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-legacy",
-  "version": "2.0.0-alpha.4",
+  "version": "2.0.0-alpha.5",
   "description": "Generate a legacy bundle",
   "author": "Alec Larson",
   "license": "MIT",
