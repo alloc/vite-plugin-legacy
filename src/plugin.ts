@@ -5,7 +5,6 @@ import commonJS from '@rollup/plugin-commonjs'
 import dedent from 'dedent'
 import babel from '@babel/core'
 import chalk from 'chalk'
-import path from 'path'
 import { KnownPolyfill, knownPolyfills } from './polyfills'
 
 /** Plugin configuration */
@@ -53,8 +52,7 @@ export default (config: PluginConfig = {}): Plugin => {
 
       const target = resolveTarget(config, viteConfig)
       const renderScript = createScriptFactory(target, config)
-      const getBasePath = (fileName: string) =>
-        path.posix.join(viteConfig.build.base, fileName)
+      const getBasePath = (fileName: string) => viteConfig.build.base + fileName
 
       transformIndexHtml = html =>
         html.replace(
