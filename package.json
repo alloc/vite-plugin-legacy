@@ -16,7 +16,7 @@
     "prepare": "yarn build"
   },
   "peerDependencies": {
-    "vite": ">=2"
+    "vite": ">2.0.0-0"
   },
   "dependencies": {
     "@babel/core": "^7.12.3",
