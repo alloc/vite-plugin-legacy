@@ -30,14 +30,12 @@ type PluginConfig = {
 }
 
 export default (config: PluginConfig = {}): Plugin => {
-  let transformIndexHtml = (html: string) => html
   return {
     name: 'vite:legacy',
+    apply: 'build',
     // Ensure this plugin runs before vite:html
     enforce: 'pre',
     configResolved(viteConfig) {
-      if (viteConfig.command !== 'build') return
-
       let mainChunk: OutputChunk
       let legacyChunk: OutputChunk
 
@@ -54,7 +52,7 @@ export default (config: PluginConfig = {}): Plugin => {
       const renderScript = createScriptFactory(target, config)
       const getBasePath = (fileName: string) => viteConfig.build.base + fileName
 
-      transformIndexHtml = html =>
+      this.transformIndexHtml = html =>
         html.replace(
           /<script type="module" src="([^"]+)"><\/script>/g,
           (match, moduleId) =>
@@ -68,7 +66,6 @@ export default (config: PluginConfig = {}): Plugin => {
               : match
         )
     },
-    transformIndexHtml: html => transformIndexHtml(html),
   }
 }
 
