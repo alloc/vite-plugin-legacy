@@ -40,12 +40,18 @@ export default (config: PluginConfig = {}): Plugin => {
       let legacyChunk: OutputChunk
 
       this.generateBundle = async function (_, bundle) {
-        // TODO: bail out if this is a worker bundle
-        mainChunk = Object.values(bundle)[0] as any
+        mainChunk = Object.values(bundle).find(
+          asset =>
+            asset.type == 'chunk' &&
+            asset.fileName.endsWith('.js') &&
+            asset.facadeModuleId?.endsWith('.html')
+        ) as OutputChunk
 
-        viteConfig.logger.info(chalk.cyan('creating legacy bundle...'))
-        legacyChunk = await createLegacyChunk(mainChunk, config, viteConfig)
-        bundle[legacyChunk.fileName] = legacyChunk
+        if (mainChunk) {
+          viteConfig.logger.info(chalk.cyan('creating legacy bundle...'))
+          legacyChunk = await createLegacyChunk(mainChunk, config, viteConfig)
+          bundle[legacyChunk.fileName] = legacyChunk
+        }
       }
 
       const target = resolveTarget(config, viteConfig)
