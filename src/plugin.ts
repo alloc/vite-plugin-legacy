@@ -170,16 +170,27 @@ function joinLines(...lines: (string | false)[]) {
   return lines.filter(Boolean).join('\n')
 }
 
+function toArray<T>(value: T | T[]): T[] {
+  return Array.isArray(value) ? value : [value]
+}
+
 function resolveTarget(config: PluginConfig, viteConfig: ViteConfig): string {
   let result = config.ecmaVersion
-  if (!result && typeof viteConfig.esbuild !== 'function') {
-    const { target } = viteConfig.esbuild || {}
-    const targets = typeof target == 'string' ? [target] : target
-    if (targets) {
-      result = targets.find(target => /^es\d+$/i.test(target))
+  if (!result) {
+    let { target } = viteConfig.build
+    if (!target) {
+      target =
+        typeof viteConfig.esbuild !== 'function' &&
+        (viteConfig.esbuild || {}).target!
+    }
+    if (target) {
+      result = toArray(target as string).find(value => /^es\d+$/i.test(value))
     }
   }
-  return (result || 'es2020').toLowerCase()
+  if (result && /^es\d+$/i.test(result)) {
+    return result.toLowerCase()
+  }
+  return 'es2020'
 }
 
 /** Convert `esbuildTarget` to a version year (eg: "es6" ➜ 2015). */
