@@ -36,21 +36,23 @@ export default (config: PluginConfig = {}): Plugin => {
     // Ensure this plugin runs before vite:html
     enforce: 'pre',
     configResolved(viteConfig) {
-      let mainChunk: OutputChunk
-      let legacyChunk: OutputChunk
+      let entryChunks: OutputChunk[]
+      let legacyChunks = new Map<OutputChunk, OutputChunk>()
 
       this.generateBundle = async function (_, bundle) {
-        mainChunk = Object.values(bundle).find(
-          asset =>
-            asset.type == 'chunk' &&
-            asset.fileName.endsWith('.js') &&
-            asset.facadeModuleId?.endsWith('.html')
-        ) as OutputChunk
+        entryChunks = Object.values(bundle).filter(
+          asset => asset.type == 'chunk' && asset.isEntry
+        ) as OutputChunk[]
 
-        if (mainChunk) {
-          viteConfig.logger.info(chalk.cyan('creating legacy bundle...'))
-          legacyChunk = await createLegacyChunk(mainChunk, config, viteConfig)
+        viteConfig.logger.info(chalk.cyan('creating legacy bundle...'))
+        for (const entryChunk of entryChunks) {
+          const legacyChunk = await createLegacyChunk(
+            entryChunk,
+            config,
+            viteConfig
+          )
           bundle[legacyChunk.fileName] = legacyChunk
+          legacyChunks.set(entryChunk, legacyChunk)
         }
       }
 
@@ -61,8 +63,12 @@ export default (config: PluginConfig = {}): Plugin => {
       this.transformIndexHtml = html =>
         html.replace(
           /<script type="module" src="([^"]+)"><\/script>/g,
-          (match, moduleId) =>
-            moduleId == getBasePath(mainChunk.fileName)
+          (match, moduleId) => {
+            const entryChunk = entryChunks.find(
+              entryChunk => moduleId == getBasePath(entryChunk.fileName)
+            )
+            const legacyChunk = entryChunk && legacyChunks.get(entryChunk)
+            return legacyChunk
               ? renderScript(
                   moduleId,
                   getBasePath(legacyChunk.fileName),
@@ -70,6 +76,7 @@ export default (config: PluginConfig = {}): Plugin => {
                     /\bregeneratorRuntime\b/.test(legacyChunk.code)
                 )
               : match
+          }
         )
     },
   }
