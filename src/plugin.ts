@@ -58,7 +58,7 @@ export default (config: PluginConfig = {}): Plugin => {
 
       const target = resolveTarget(config, viteConfig)
       const renderScript = createScriptFactory(target, config)
-      const getBasePath = (fileName: string) => viteConfig.build.base + fileName
+      const getBasePath = (fileName: string) => viteConfig.base + fileName
 
       this.transformIndexHtml = html =>
         html.replace(
