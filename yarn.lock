@@ -1121,10 +1121,10 @@ esbuild@0.7.2:
   resolved "https://registry.npmjs.org/esbuild/-/esbuild-0.7.2.tgz#54c42a994a6d2d0e1719c6be4f2c6aad50258310"
   integrity sha512-KyMvZ9zNe7AvcWkU0/BwVqNq6Hk/+xXjgaZHVjHlTNaz9FO21Ehx0yZiwBRYaWmPxDHvCAvo9vzJHOVCjqZC4w==
 
-esbuild@^0.8.26:
-  version "0.8.28"
-  resolved "https://registry.npmjs.org/esbuild/-/esbuild-0.8.28.tgz#54f1b2dda1c1a8613308a41d31f9a5ad9fbbcbed"
-  integrity sha512-8u4PliPrsELMwl0X4ChPJvlNfoSh5OSpLHcAFFiipi2m/k+9i4cEjQB8rztLiiqO7kXnL+IaNU36StgnpHhOwA==
+esbuild@^0.8.34:
+  version "0.8.39"
+  resolved "https://registry.npmjs.org/esbuild/-/esbuild-0.8.39.tgz#18b84a3d56173c55ee8f45bc6c7b5374b0a98ecb"
+  integrity sha512-/do5H74a5ChyeKRWfkDh3EpICXpsz6dWTtFFbotb7BlIHvWqnRrZYDb8IBubOHdEtKzuiksilRO19aBtp3/HHQ==
 
 escalade@^3.1.0:
   version "3.1.1"
@@ -1232,6 +1232,13 @@ is-core-module@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmjs.org/is-core-module/-/is-core-module-2.0.0.tgz#58531b70aed1db7c0e8d4eb1a0a2d1ddd64bd12d"
   integrity sha512-jq1AH6C8MuteOoBPwkxHafmByhL9j5q4OaPGdbuD+ZtQJVzH+i6E3BJDQcBA09k57i2Hh2yQbEG8yObZ0jdlWw==
+  dependencies:
+    has "^1.0.3"
+
+is-core-module@^2.1.0:
+  version "2.2.0"
+  resolved "https://registry.npmjs.org/is-core-module/-/is-core-module-2.2.0.tgz#97037ef3d52224d85163f5597b2b63d9afed981a"
+  integrity sha512-XRAfAdyyY5F5cOXn7hYQDqh2Xmii+DEfIcQGxK/uNwMHhIkPWO0g8msXcbzLe+MpGoR951MlqM/2iIlU4vKDdQ==
   dependencies:
     has "^1.0.3"
 
@@ -1465,6 +1472,14 @@ resolve@^1.17.0, resolve@^1.3.2:
     is-core-module "^2.0.0"
     path-parse "^1.0.6"
 
+resolve@^1.19.0:
+  version "1.19.0"
+  resolved "https://registry.npmjs.org/resolve/-/resolve-1.19.0.tgz#1af5bf630409734a067cae29318aac7fa29a267c"
+  integrity sha512-rArEXAgsBG4UgRGcynxWIWKFvh/XZCcS8UJdHhwy91zwAvCZIbcs+vAbflgBnNjYMs/i/i+/Ux6IZhML1yPvxg==
+  dependencies:
+    is-core-module "^2.1.0"
+    path-parse "^1.0.6"
+
 rollup-plugin-dts@^1.4.10:
   version "1.4.13"
   resolved "https://registry.npmjs.org/rollup-plugin-dts/-/rollup-plugin-dts-1.4.13.tgz#4f086e84f4fdcc1f49160799ebc66f6b09db292b"
@@ -1637,13 +1652,14 @@ unicode-property-aliases-ecmascript@^1.0.4:
   resolved "https://registry.npmjs.org/unicode-property-aliases-ecmascript/-/unicode-property-aliases-ecmascript-1.1.0.tgz#dd57a99f6207bedff4628abefb94c50db941c8f4"
   integrity sha512-PqSoPh/pWetQ2phoj5RLiaqIk4kCNwoV3CI+LfGmWLKI3rE3kl1h59XpX2BjgDrmbxD9ARtQobPGU1SguCYuQg==
 
-vite@2.0.0-alpha.5:
-  version "2.0.0-alpha.5"
-  resolved "https://registry.npmjs.org/vite/-/vite-2.0.0-alpha.5.tgz#e7e840c0caafbc3d1264efb7b7cf5f08000bff24"
-  integrity sha512-cRm1/ZlcmIcl43ehvxs5Hr+5WapCYe3Zf4i6GM0a+VJPUgE0SJFzEO/SgZhJEc7PINmo+4TXKWAokZU+XvvwoA==
+vite@latest:
+  version "2.0.0-beta.61"
+  resolved "https://registry.npmjs.org/vite/-/vite-2.0.0-beta.61.tgz#da605152999cf8943672202ab6b38b68f4c7b9e4"
+  integrity sha512-NyRZ7vCwtfw/z18HmFr5ZIesum26Dg9x4ykuit1YmYsZlPxx/oF3il1U6MqkXZD2wy8HaR5fQi9d9B/6vEJMbw==
   dependencies:
-    esbuild "^0.8.26"
+    esbuild "^0.8.34"
     postcss "^8.2.1"
+    resolve "^1.19.0"
     rollup "^2.35.1"
   optionalDependencies:
     fsevents "~2.1.2"
