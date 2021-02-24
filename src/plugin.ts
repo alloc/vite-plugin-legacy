@@ -276,6 +276,7 @@ async function createLegacyChunk(
   // Generate the legacy bundle.
   const { output } = await bundle.generate({
     entryFileNames: legacyPath,
+    name: viteBuild.lib ? viteBuild.lib.name : undefined,
     format: 'iife',
     sourcemap: viteBuild.sourcemap,
     sourcemapExcludeSources: true,
