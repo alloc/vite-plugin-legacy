@@ -2,6 +2,9 @@
 
 Easily generate a legacy bundle for outdated browser support.
 
+> Consider trying the official plugin first:
+> https://github.com/vitejs/vite/tree/main/packages/plugin-legacy
+
 ### Features
 
 - **Based on `@babel/preset-env`**  
